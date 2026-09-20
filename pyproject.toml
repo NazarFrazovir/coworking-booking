@@ -16,7 +16,8 @@ exclude = [".venv", "venv", "__pycache__"]
 [tool.ruff.lint]
 # E/W: pycodestyle, F: pyflakes, I: isort, B: bugbear, UP: pyupgrade
 select = ["E", "W", "F", "I", "B", "UP"]
-ignore = []
+# B008: Depends(...) in argument defaults is the official FastAPI DI idiom.
+ignore = ["B008"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]

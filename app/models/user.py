@@ -1,12 +1,16 @@
 """User ORM model."""
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.sql import func
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.booking import Booking
 
 
 class User(Base):

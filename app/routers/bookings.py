@@ -24,9 +24,7 @@ DEMO_USER_ID = 1
 @router.post("/", response_model=BookingRead, status_code=status.HTTP_201_CREATED)
 def create_booking(payload: BookingCreate, db: Session = Depends(get_db)) -> Booking:
     if payload.end_time <= payload.start_time:
-        raise HTTPException(
-            status_code=422, detail="end_time must be after start_time"
-        )
+        raise HTTPException(status_code=422, detail="end_time must be after start_time")
 
     booking = Booking(
         user_id=DEMO_USER_ID,

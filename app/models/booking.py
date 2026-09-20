@@ -8,11 +8,16 @@ balancing lab) with row-level locking or a distributed lock.
 """
 
 from datetime import datetime
+from typing import TYPE_CHECKING
 
 from sqlalchemy import DateTime, ForeignKey, String, UniqueConstraint
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.database import Base
+
+if TYPE_CHECKING:
+    from app.models.space import Space
+    from app.models.user import User
 
 
 class Booking(Base):
