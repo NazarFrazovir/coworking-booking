@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% block title %}Мій кабінет — CoWork Booking{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Вітаємо, {{ user.full_name }}!</h2>
+  <p class="muted">Домашня сторінка користувача (заглушка). Бронювання створюються через API — див. <a href="/docs">/docs</a>.</p>
+</div>
+<div class="card">
+  <h3>Мої бронювання</h3>
+  {% if bookings %}
+  <table>
+    <tr><th>#</th><th>Простір</th><th>Початок (UTC)</th><th>Кінець (UTC)</th><th>Статус</th></tr>
+    {% for b in bookings %}
+    <tr><td>{{ b.id }}</td><td>{{ b.space.name }}</td><td>{{ b.start_time.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ b.end_time.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ b.status }}</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted">Бронювань поки немає.</p>{% endif %}
+</div>
+<div class="card">
+  <h3>Доступні простори</h3>
+  {% if spaces %}
+  <table>
+    <tr><th>#</th><th>Назва</th><th>Тип</th><th>Місткість</th><th>Локація</th></tr>
+    {% for s in spaces %}
+    <tr><td>{{ s.id }}</td><td>{{ s.name }}</td><td>{{ s.space_type }}</td><td>{{ s.capacity }}</td><td>{{ s.location }}</td></tr>
+    {% endfor %}
+  </table>
+  {% else %}<p class="muted">Адміністратор ще не додав жодного простору.</p>{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}Вхід — CoWork Booking{% endblock %}
+{% block content %}
+<div class="card narrow">
+  <h2>Вхід</h2>
+  {% if error %}<div class="error">{{ error }}</div>{% endif %}
+  <form method="post" action="/login">
+    <label for="email">Email</label>
+    <input id="email" name="email" type="email" value="{{ email or '' }}" required>
+    <label for="password">Пароль</label>
+    <input id="password" name="password" type="password" required>
+    <button type="submit">Увійти</button>
+  </form>
+  <p class="muted">Немає акаунта? <a href="/register">Зареєструватися</a></p>
+</div>
+{% endblock %}

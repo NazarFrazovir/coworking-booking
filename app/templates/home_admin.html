@@ -1,0 +1,23 @@
+{% extends "base.html" %}
+{% block title %}Адмін-панель — CoWork Booking{% endblock %}
+{% block content %}
+<div class="card">
+  <h2>Адмін-панель</h2>
+  <p class="muted">Домашня сторінка адміністратора (заглушка). Керування просторами та користувачами — через API <code>/api/v1/admin/*</code>, <code>/api/v1/spaces</code>.</p>
+  <div class="stats">
+    <div class="stat"><b>{{ stats.users }}</b><span class="muted">користувачів</span></div>
+    <div class="stat"><b>{{ stats.admins }}</b><span class="muted">адміністраторів</span></div>
+    <div class="stat"><b>{{ stats.active_spaces }}</b><span class="muted">активних просторів</span></div>
+    <div class="stat"><b>{{ stats.confirmed_bookings }}</b><span class="muted">активних бронювань</span></div>
+  </div>
+</div>
+<div class="card">
+  <h3>Користувачі</h3>
+  <table>
+    <tr><th>#</th><th>Ім'я</th><th>Email</th><th>Роль</th><th>Активний</th></tr>
+    {% for u in users %}
+    <tr><td>{{ u.id }}</td><td>{{ u.full_name }}</td><td>{{ u.email }}</td><td>{{ u.role }}</td><td>{{ 'так' if u.is_active else 'ні' }}</td></tr>
+    {% endfor %}
+  </table>
+</div>
+{% endblock %}
