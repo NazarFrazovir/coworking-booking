@@ -4,6 +4,8 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from app.models.booking import BookingStatus
+
 
 class BookingBase(BaseModel):
     space_id: int
@@ -12,7 +14,15 @@ class BookingBase(BaseModel):
 
 
 class BookingCreate(BookingBase):
-    pass
+    """``user_id`` is NOT accepted from the client — it is always taken
+    from the authenticated user, so nobody can book on someone's behalf."""
+
+
+class BookingUpdate(BaseModel):
+    """Reschedule an existing booking."""
+
+    start_time: datetime
+    end_time: datetime
 
 
 class BookingRead(BookingBase):
@@ -20,4 +30,4 @@ class BookingRead(BookingBase):
 
     id: int
     user_id: int
-    status: str
+    status: BookingStatus
