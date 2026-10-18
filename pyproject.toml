@@ -1,7 +1,7 @@
 [project]
 name = "coworking-booking"
 version = "0.1.0"
-description = "Coworking & conference room booking platform (lab #1 scaffold)"
+description = "Coworking & conference room booking platform"
 requires-python = ">=3.11"
 
 [tool.black]
@@ -21,3 +21,7 @@ ignore = ["B008"]
 
 [tool.ruff.lint.isort]
 known-first-party = ["app"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+filterwarnings = ["ignore::DeprecationWarning:starlette.*"]
