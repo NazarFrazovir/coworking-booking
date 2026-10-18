@@ -6,7 +6,7 @@ from fastapi.responses import JSONResponse
 from app.config import settings
 from app.routers import admin, auth, bookings, spaces, users
 from app.services.errors import DomainError
-from app.web import pages
+from app.web import admin_pages, pages, user_pages
 
 app = FastAPI(title=settings.app_name)
 
@@ -16,6 +16,8 @@ app.include_router(spaces.router, prefix=settings.api_v1_prefix)
 app.include_router(bookings.router, prefix=settings.api_v1_prefix)
 app.include_router(admin.router, prefix=settings.api_v1_prefix)
 app.include_router(pages.router)
+app.include_router(user_pages.router)
+app.include_router(admin_pages.router)
 
 
 @app.exception_handler(DomainError)

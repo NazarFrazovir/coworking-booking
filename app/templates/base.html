@@ -5,40 +5,64 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>{% block title %}CoWork Booking{% endblock %}</title>
   <style>
-    :root { --bg:#f6f7f9; --card:#fff; --text:#1d2330; --muted:#6b7280; --accent:#2f6fed; --danger:#c0392b; --border:#e3e6eb; }
+    :root { --bg:#f5f6f8; --card:#fff; --text:#1d2330; --muted:#6b7280; --accent:#2f6fed; --accent-soft:#e8efff;
+            --danger:#c0392b; --danger-soft:#fdecea; --ok:#1e8449; --ok-soft:#e6f4ea; --border:#e3e6eb; }
     * { box-sizing: border-box; }
-    body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--text); }
-    header { background:var(--card); border-bottom:1px solid var(--border); padding:12px 24px; display:flex; justify-content:space-between; align-items:center; }
-    header a { color:var(--text); text-decoration:none; font-weight:600; }
-    main { max-width:880px; margin:32px auto; padding:0 16px; }
-    .card { background:var(--card); border:1px solid var(--border); border-radius:10px; padding:24px; margin-bottom:20px; }
+    body { margin:0; font-family: system-ui, -apple-system, "Segoe UI", sans-serif; background:var(--bg); color:var(--text); font-size:15px; }
+    header { background:var(--card); border-bottom:1px solid var(--border); padding:12px 24px; display:flex; justify-content:space-between; align-items:center; gap:12px; flex-wrap:wrap; }
+    header .brand { color:var(--text); text-decoration:none; font-weight:700; font-size:17px; }
+    header .who { display:flex; align-items:center; gap:10px; }
+    main { max-width:1040px; margin:28px auto; padding:0 16px; }
+    h2 { margin:0 0 6px; } h3 { margin:0 0 14px; }
+    .card { background:var(--card); border:1px solid var(--border); border-radius:12px; padding:22px; margin-bottom:20px; }
     .narrow { max-width:400px; margin-left:auto; margin-right:auto; }
-    label { display:block; margin:12px 0 4px; font-size:14px; color:var(--muted); }
-    input { width:100%; padding:9px 10px; border:1px solid var(--border); border-radius:6px; font-size:15px; }
-    button { margin-top:16px; background:var(--accent); color:#fff; border:0; border-radius:6px; padding:9px 16px; font-size:15px; cursor:pointer; }
-    button.link { background:none; color:var(--accent); padding:0; margin:0; }
-    .error { background:#fdecea; color:var(--danger); padding:10px; border-radius:6px; font-size:14px; }
-    .badge { display:inline-block; font-size:12px; padding:2px 8px; border-radius:999px; background:#e8efff; color:var(--accent); }
-    .badge.admin { background:#fdecea; color:var(--danger); }
+    .grid { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; align-items:end; }
+    label { display:block; margin:0 0 4px; font-size:13px; color:var(--muted); }
+    .narrow label { margin-top:12px; }
+    input, select { width:100%; padding:8px 10px; border:1px solid var(--border); border-radius:7px; font-size:15px; background:#fff; font-family:inherit; }
+    button { background:var(--accent); color:#fff; border:0; border-radius:7px; padding:9px 16px; font-size:14px; cursor:pointer; font-family:inherit; }
+    .narrow button { margin-top:16px; width:100%; }
+    button.small { padding:5px 10px; font-size:13px; }
+    button.ghost { background:var(--accent-soft); color:var(--accent); }
+    button.danger { background:var(--danger-soft); color:var(--danger); }
+    button.link { background:none; color:var(--accent); padding:0; }
+    form.inline { display:inline; margin:0; }
+    .alert { padding:10px 14px; border-radius:8px; margin-bottom:18px; font-size:14px; }
+    .alert.err { background:var(--danger-soft); color:var(--danger); }
+    .alert.ok { background:var(--ok-soft); color:var(--ok); }
+    .badge { display:inline-block; font-size:12px; padding:2px 9px; border-radius:999px; background:var(--accent-soft); color:var(--accent); white-space:nowrap; }
+    .badge.admin, .badge.cancelled, .badge.off { background:var(--danger-soft); color:var(--danger); }
+    .badge.confirmed, .badge.on { background:var(--ok-soft); color:var(--ok); }
+    .table-wrap { overflow-x:auto; }
     table { width:100%; border-collapse:collapse; font-size:14px; }
-    th, td { text-align:left; padding:8px; border-bottom:1px solid var(--border); }
-    .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; }
-    .stat { background:var(--bg); border-radius:8px; padding:14px; }
+    th { text-align:left; color:var(--muted); font-weight:500; font-size:13px; }
+    th, td { padding:9px 8px; border-bottom:1px solid var(--border); vertical-align:middle; }
+    tr:last-child td { border-bottom:0; }
+    .stats { display:grid; grid-template-columns:repeat(auto-fit, minmax(150px, 1fr)); gap:12px; margin-top:14px; }
+    .stat { background:var(--bg); border-radius:9px; padding:14px; }
     .stat b { display:block; font-size:26px; }
     .muted { color:var(--muted); font-size:14px; }
+    .row-actions { display:flex; gap:6px; flex-wrap:wrap; }
+    nav.tabs { display:flex; gap:6px; margin-bottom:18px; flex-wrap:wrap; }
+    nav.tabs a { padding:7px 14px; border-radius:999px; text-decoration:none; color:var(--text); background:var(--card); border:1px solid var(--border); font-size:14px; }
+    details summary { cursor:pointer; color:var(--accent); font-size:14px; }
   </style>
 </head>
 <body>
   <header>
-    <a href="/">CoWork Booking</a>
+    <a class="brand" href="/">CoWork Booking</a>
     {% if user %}
-      <form method="post" action="/logout" style="margin:0">
-        <span class="muted">{{ user.email }}</span>
-        <span class="badge {{ 'admin' if user.is_admin }}">{{ user.role }}</span>
-        &nbsp;<button class="link" type="submit">Вийти</button>
-      </form>
+      <div class="who">
+        <span class="muted">{{ user.full_name }} · {{ user.email }}</span>
+        <span class="badge {{ 'admin' if user.is_admin }}">{{ 'адміністратор' if user.is_admin else 'користувач' }}</span>
+        <form class="inline" method="post" action="/logout"><button class="link" type="submit">Вийти</button></form>
+      </div>
     {% endif %}
   </header>
-  <main>{% block content %}{% endblock %}</main>
+  <main>
+    {% if msg %}<div class="alert ok">{{ msg }}</div>{% endif %}
+    {% if err %}<div class="alert err">{{ err }}</div>{% endif %}
+    {% block content %}{% endblock %}
+  </main>
 </body>
 </html>

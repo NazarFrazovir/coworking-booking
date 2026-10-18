@@ -3,28 +3,58 @@
 {% block content %}
 <div class="card">
   <h2>Вітаємо, {{ user.full_name }}!</h2>
-  <p class="muted">Домашня сторінка користувача (заглушка). Бронювання створюються через API — див. <a href="/docs">/docs</a>.</p>
+  <p class="muted" style="margin:0">Оберіть простір і час, щоб забронювати. Час — київський.</p>
 </div>
+
+<div class="card">
+  <h3>Нове бронювання</h3>
+  {% if spaces %}
+  <form method="post" action="/home/bookings">
+    <div class="grid">
+      <div>
+        <label for="space_id">Простір</label>
+        <select id="space_id" name="space_id" required>
+          {% for s in spaces %}<option value="{{ s.id }}">{{ s.name }} ({{ s.space_type }}, до {{ s.capacity }} осіб)</option>{% endfor %}
+        </select>
+      </div>
+      <div><label for="day">Дата</label><input id="day" type="date" name="day" min="{{ today }}" value="{{ today }}" required></div>
+      <div><label for="start">Початок</label><input id="start" type="time" name="start" value="10:00" step="900" required></div>
+      <div><label for="end">Кінець</label><input id="end" type="time" name="end" value="11:00" step="900" required></div>
+      <div><button type="submit">Забронювати</button></div>
+    </div>
+  </form>
+  {% else %}<p class="muted">Адміністратор ще не додав жодного простору.</p>{% endif %}
+</div>
+
 <div class="card">
   <h3>Мої бронювання</h3>
   {% if bookings %}
-  <table>
-    <tr><th>#</th><th>Простір</th><th>Початок (UTC)</th><th>Кінець (UTC)</th><th>Статус</th></tr>
+  <div class="table-wrap"><table>
+    <tr><th>#</th><th>Простір</th><th>Початок</th><th>Кінець</th><th>Статус</th><th></th></tr>
     {% for b in bookings %}
-    <tr><td>{{ b.id }}</td><td>{{ b.space.name }}</td><td>{{ b.start_time.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ b.end_time.strftime('%Y-%m-%d %H:%M') }}</td><td>{{ b.status }}</td></tr>
+    <tr>
+      <td>{{ b.id }}</td><td>{{ b.space.name }}</td>
+      <td>{{ b.start_time|local }}</td><td>{{ b.end_time|local('%H:%M') }}</td>
+      <td><span class="badge {{ b.status }}">{{ 'активне' if b.status == confirmed else 'скасоване' }}</span></td>
+      <td>{% if b.status == confirmed %}
+        <form class="inline" method="post" action="/home/bookings/{{ b.id }}/cancel" onsubmit="return confirm('Скасувати бронювання?')">
+          <button class="small danger" type="submit">Скасувати</button>
+        </form>{% endif %}</td>
+    </tr>
     {% endfor %}
-  </table>
+  </table></div>
   {% else %}<p class="muted">Бронювань поки немає.</p>{% endif %}
 </div>
+
 <div class="card">
-  <h3>Доступні простори</h3>
+  <h3>Простори</h3>
   {% if spaces %}
-  <table>
-    <tr><th>#</th><th>Назва</th><th>Тип</th><th>Місткість</th><th>Локація</th></tr>
-    {% for s in spaces %}
-    <tr><td>{{ s.id }}</td><td>{{ s.name }}</td><td>{{ s.space_type }}</td><td>{{ s.capacity }}</td><td>{{ s.location }}</td></tr>
-    {% endfor %}
-  </table>
-  {% else %}<p class="muted">Адміністратор ще не додав жодного простору.</p>{% endif %}
+  <div class="table-wrap"><table>
+    <tr><th>Назва</th><th>Тип</th><th>Місткість</th><th>Розташування</th></tr>
+    {% for s in spaces %}<tr><td>{{ s.name }}</td><td>{{ s.space_type }}</td><td>{{ s.capacity }}</td><td>{{ s.location }}</td></tr>{% endfor %}
+  </table></div>
+  {% else %}<p class="muted">Поки порожньо.</p>{% endif %}
 </div>
+
+{% include "_profile.html" %}
 {% endblock %}

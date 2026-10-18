@@ -33,6 +33,9 @@ class Settings(BaseSettings):
     auth_cookie_name: str = "access_token"
     cookie_secure: bool = False
 
+    # Time zone in which the web pages show and accept times.
+    display_timezone: str = "Europe/Kyiv"
+
     # Business rules for bookings.
     max_booking_hours: int = 12
 

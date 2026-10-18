@@ -1,0 +1,13 @@
+<div class="card">
+  <details>
+    <summary>Редагувати профіль</summary>
+    <form method="post" action="/home/profile" style="margin-top:14px">
+      <div class="grid">
+        <div><label>Ім'я</label><input name="full_name" value="{{ user.full_name }}" required minlength="2"></div>
+        <div><label>Поточний пароль</label><input name="current_password" type="password" placeholder="лише для зміни пароля"></div>
+        <div><label>Новий пароль</label><input name="new_password" type="password" minlength="8" placeholder="мін. 8 символів"></div>
+        <div><button type="submit">Зберегти</button></div>
+      </div>
+    </form>
+  </details>
+</div>
