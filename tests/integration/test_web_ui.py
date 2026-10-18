@@ -48,7 +48,7 @@ def test_user_books_and_cancels_via_form(
 
     page = client.get("/home")
     assert page.status_code == 200
-    assert space.name in page.text and "активне" in page.text
+    assert space.name in page.text and "Наступне бронювання" in page.text
 
     r = client.post(f"/home/bookings/{booking.id}/cancel")
     assert r.status_code == 302

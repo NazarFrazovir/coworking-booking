@@ -17,7 +17,14 @@ from app.models.user import User, UserRole
 from app.routers.admin import stats as admin_stats
 from app.services import bookings as booking_service
 from app.services.errors import DomainError
-from app.web.common import flash, forbidden, redirect, templates
+from app.web.common import (
+    flash,
+    forbidden,
+    parse_day,
+    redirect,
+    schedule_context,
+    templates,
+)
 from app.web.user_pages import ua
 
 router = APIRouter(prefix="/admin", include_in_schema=False)
@@ -41,7 +48,7 @@ def admin_home(
     if (denied := _admin_or_response(request, user)) is not None:
         return denied
     users = db.scalars(select(User).order_by(User.id)).all()
-    spaces = db.scalars(select(Space).order_by(Space.id)).all()
+    all_spaces = db.scalars(select(Space).order_by(Space.id)).all()
     bookings = db.scalars(
         select(Booking)
         .options(joinedload(Booking.user), joinedload(Booking.space))
@@ -54,8 +61,9 @@ def admin_home(
             "user": user,
             "stats": admin_stats(db),
             "users": users,
-            "spaces": spaces,
+            "all_spaces": all_spaces,
             "bookings": bookings,
+            **schedule_context(db, parse_day(request.query_params.get("day")), user),
             "confirmed": BookingStatus.CONFIRMED,
             **flash(request),
         },

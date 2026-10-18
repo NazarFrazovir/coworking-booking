@@ -1,13 +1,15 @@
-<div class="card">
-  <details>
-    <summary>Редагувати профіль</summary>
-    <form method="post" action="/home/profile" style="margin-top:14px">
-      <div class="grid">
-        <div><label>Ім'я</label><input name="full_name" value="{{ user.full_name }}" required minlength="2"></div>
-        <div><label>Поточний пароль</label><input name="current_password" type="password" placeholder="лише для зміни пароля"></div>
-        <div><label>Новий пароль</label><input name="new_password" type="password" minlength="8" placeholder="мін. 8 символів"></div>
-        <div><button type="submit">Зберегти</button></div>
-      </div>
+<details class="more profile">
+  <summary>Мій профіль</summary>
+  <div class="panel panel-pad">
+    <form method="post" action="/home/profile" class="profile-form">
+      <div><label for="p-name">Імʼя та прізвище</label><input id="p-name" name="full_name" value="{{ user.full_name }}" required minlength="2" autocomplete="name"></div>
+      <div><label for="p-cur">Поточний пароль</label><input id="p-cur" name="current_password" type="password" autocomplete="current-password" placeholder="Потрібен лише для зміни пароля"></div>
+      <div><label for="p-new">Новий пароль</label><input id="p-new" name="new_password" type="password" minlength="8" autocomplete="new-password" placeholder="Щонайменше 8 символів"></div>
+      <button class="btn" type="submit">Зберегти профіль</button>
     </form>
-  </details>
-</div>
+  </div>
+</details>
+<style>
+  .profile-form { display: grid; grid-template-columns: repeat(3, 1fr) auto; gap: 14px; align-items: end; }
+  @media (max-width: 900px) { .profile-form { grid-template-columns: 1fr; } }
+</style>

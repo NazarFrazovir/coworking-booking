@@ -1,60 +1,162 @@
 {% extends "base.html" %}
-{% block title %}Мій кабінет — CoWork Booking{% endblock %}
+{% block title %}Мій розклад — CoWork Booking{% endblock %}
+{% block head %}
+<style>
+  .hello { display: grid; grid-template-columns: 1fr minmax(280px, 380px); gap: 24px; align-items: stretch; }
+  .hello-text { display: flex; flex-direction: column; justify-content: center; gap: 10px; }
+  .hello-text p { font-size: 17px; color: var(--stone); max-width: 52ch; }
+  .next {
+    background: var(--sun); color: #3D2A00; border-radius: var(--r-lg); padding: 22px 24px;
+    display: flex; flex-direction: column; gap: 6px; position: relative; overflow: hidden;
+  }
+  .next::after {
+    content: ""; position: absolute; right: -40px; bottom: -40px; width: 160px; height: 160px; border-radius: 50%;
+    border: 24px solid rgba(255,255,255,.22);
+  }
+  .next-label { font-size: 14px; font-weight: 500; opacity: .75; }
+  .next-space { font: 700 22px/1.2 var(--display); }
+  .next-when { font-size: 16px; font-weight: 500; }
+  .next.is-empty { background: var(--paper); color: var(--ink); border: 1px dashed var(--line-strong); }
+  .next.is-empty::after { display: none; }
+
+  .book-form { display: grid; grid-template-columns: 2fr 1.2fr 1fr 1fr auto; gap: 14px; align-items: end; }
+  .book-form .btn { min-width: 160px; }
+  #book.is-pulled { animation: pull .9s ease-out; }
+  @keyframes pull { 0% { box-shadow: 0 0 0 0 rgba(242,181,68,.7); } 100% { box-shadow: 0 0 0 14px rgba(242,181,68,0); } }
+
+  .tickets { display: grid; gap: 12px; }
+  .ticket {
+    display: grid; grid-template-columns: 76px 1fr auto; gap: 18px; align-items: center;
+    background: var(--paper); border: 1px solid var(--line); border-radius: var(--r-md); padding: 14px 18px 14px 14px;
+  }
+  .ticket-date {
+    background: var(--pine); color: #fff; border-radius: 12px; text-align: center; padding: 8px 4px;
+    line-height: 1.1;
+  }
+  .ticket-date b { display: block; font: 700 24px/1 var(--display); }
+  .ticket-date span { font-size: 13px; opacity: .8; }
+  .ticket-main b { display: block; font-size: 16px; font-weight: 600; }
+  .ticket-main span { color: var(--stone); font-size: 14px; }
+
+
+  @media (max-width: 900px) {
+    .hello { grid-template-columns: 1fr; }
+    .book-form { grid-template-columns: 1fr 1fr; }
+    .book-form > :first-child, .book-form .btn { grid-column: 1 / -1; }
+  }
+  @media (max-width: 520px) {
+    .ticket { grid-template-columns: 64px 1fr; }
+    .ticket form { grid-column: 1 / -1; }
+  }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="card">
-  <h2>Вітаємо, {{ user.full_name }}!</h2>
-  <p class="muted" style="margin:0">Оберіть простір і час, щоб забронювати. Час — київський.</p>
+<section class="hello">
+  <div class="hello-text">
+    <h1>{{ greeting }}, {{ first_name }}</h1>
+    <p>Оберіть вільну годину в розкладі нижче — форма заповниться сама.</p>
+  </div>
+  {% if next_booking %}
+  <div class="next">
+    <span class="next-label">Наступне бронювання</span>
+    <span class="next-space">{{ next_booking.space.name }}</span>
+    <span class="next-when">{{ next_booking.start_time|when }}, {{ next_booking.start_time|local('%H:%M') }}–{{ next_booking.end_time|local('%H:%M') }}</span>
+  </div>
+  {% else %}
+  <div class="next is-empty">
+    <span class="next-label">Наступне бронювання</span>
+    <span class="next-space">Поки немає</span>
+    <span class="next-when muted">Перше бронювання займе пів хвилини.</span>
+  </div>
+  {% endif %}
+</section>
+
+<div class="section">
+  {% set base_url = "/home" %}{% set interactive = true %}
+  {% include "_schedule.html" %}
 </div>
 
-<div class="card">
-  <h3>Нове бронювання</h3>
-  {% if spaces %}
-  <form method="post" action="/home/bookings">
-    <div class="grid">
-      <div>
-        <label for="space_id">Простір</label>
-        <select id="space_id" name="space_id" required>
-          {% for s in spaces %}<option value="{{ s.id }}">{{ s.name }} ({{ s.space_type }}, до {{ s.capacity }} осіб)</option>{% endfor %}
-        </select>
-      </div>
-      <div><label for="day">Дата</label><input id="day" type="date" name="day" min="{{ today }}" value="{{ today }}" required></div>
-      <div><label for="start">Початок</label><input id="start" type="time" name="start" value="10:00" step="900" required></div>
-      <div><label for="end">Кінець</label><input id="end" type="time" name="end" value="11:00" step="900" required></div>
-      <div><button type="submit">Забронювати</button></div>
+{% if spaces %}
+<section class="section panel panel-pad" id="book">
+  <div class="section-head"><h2>Нове бронювання</h2><span class="muted small">Час — київський, до 12 годин поспіль</span></div>
+  <form class="book-form" method="post" action="/home/bookings">
+    <div>
+      <label for="f-space">Простір</label>
+      <select id="f-space" name="space_id" required>
+        {% for s in spaces %}<option value="{{ s.id }}">{{ s.name }} ({{ s.space_type|kind|lower }}, {{ s.capacity|seats }})</option>{% endfor %}
+      </select>
     </div>
+    <div><label for="f-day">Дата</label><input id="f-day" type="date" name="day" min="{{ today.isoformat() }}" value="{{ day.isoformat() if day >= today else today.isoformat() }}" required></div>
+    <div><label for="f-start">Початок</label><input id="f-start" type="time" name="start" value="10:00" step="900" required></div>
+    <div><label for="f-end">Кінець</label><input id="f-end" type="time" name="end" value="11:00" step="900" required></div>
+    <button class="btn" type="submit">Забронювати</button>
   </form>
-  {% else %}<p class="muted">Адміністратор ще не додав жодного простору.</p>{% endif %}
-</div>
+</section>
+{% endif %}
 
-<div class="card">
-  <h3>Мої бронювання</h3>
-  {% if bookings %}
-  <div class="table-wrap"><table>
-    <tr><th>#</th><th>Простір</th><th>Початок</th><th>Кінець</th><th>Статус</th><th></th></tr>
-    {% for b in bookings %}
-    <tr>
-      <td>{{ b.id }}</td><td>{{ b.space.name }}</td>
-      <td>{{ b.start_time|local }}</td><td>{{ b.end_time|local('%H:%M') }}</td>
-      <td><span class="badge {{ b.status }}">{{ 'активне' if b.status == confirmed else 'скасоване' }}</span></td>
-      <td>{% if b.status == confirmed %}
-        <form class="inline" method="post" action="/home/bookings/{{ b.id }}/cancel" onsubmit="return confirm('Скасувати бронювання?')">
-          <button class="small danger" type="submit">Скасувати</button>
-        </form>{% endif %}</td>
-    </tr>
+<section class="section">
+  <div class="section-head"><h2>Мої бронювання</h2>{% if upcoming %}<span class="muted small">Активних: {{ upcoming|length }}</span>{% endif %}</div>
+  {% if upcoming %}
+  <div class="tickets">
+    {% for b in upcoming %}
+    <article class="ticket">
+      <div class="ticket-date"><b>{{ b.start_time|local('%d') }}</b><span>{{ b.start_time|month_short }}</span></div>
+      <div class="ticket-main">
+        <b>{{ b.space.name }}</b>
+        <span>{{ b.start_time|when }}, {{ b.start_time|local('%H:%M') }}–{{ b.end_time|local('%H:%M') }}. {{ b.space.location }}</span>
+      </div>
+      <form method="post" action="/home/bookings/{{ b.id }}/cancel" onsubmit="return confirm('Скасувати бронювання «{{ b.space.name }}»?')">
+        <button class="btn btn-danger btn-sm" type="submit">Скасувати</button>
+      </form>
+    </article>
     {% endfor %}
-  </table></div>
-  {% else %}<p class="muted">Бронювань поки немає.</p>{% endif %}
-</div>
+  </div>
+  {% else %}
+  <div class="panel empty"><strong>Активних бронювань немає</strong>Натисніть на вільну годину в розкладі, щоб забронювати простір.</div>
+  {% endif %}
 
-<div class="card">
-  <h3>Простори</h3>
-  {% if spaces %}
-  <div class="table-wrap"><table>
-    <tr><th>Назва</th><th>Тип</th><th>Місткість</th><th>Розташування</th></tr>
-    {% for s in spaces %}<tr><td>{{ s.name }}</td><td>{{ s.space_type }}</td><td>{{ s.capacity }}</td><td>{{ s.location }}</td></tr>{% endfor %}
-  </table></div>
-  {% else %}<p class="muted">Поки порожньо.</p>{% endif %}
-</div>
+  {% if history %}
+  <details class="more">
+    <summary>Історія ({{ history|length }})</summary>
+    <div class="panel table-wrap">
+      <table>
+        <tr><th>Простір</th><th>Дата</th><th>Час</th><th>Статус</th></tr>
+        {% for b in history %}
+        <tr>
+          <td>{{ b.space.name }}</td>
+          <td>{{ b.start_time|local('%d.%m.%Y') }}</td>
+          <td>{{ b.start_time|local('%H:%M') }}–{{ b.end_time|local('%H:%M') }}</td>
+          <td>{% if b.status == confirmed %}<span class="tag tag-neutral">Завершене</span>{% else %}<span class="tag tag-off">Скасоване</span>{% endif %}</td>
+        </tr>
+        {% endfor %}
+      </table>
+    </div>
+  </details>
+  {% endif %}
+</section>
 
-{% include "_profile.html" %}
+<section class="section">
+  {% include "_profile.html" %}
+</section>
+
+<script>
+  // Clicking a free hour on the board fills in the booking form.
+  document.querySelectorAll('.is-interactive .slot:not(:disabled)').forEach(function (slot) {
+    slot.addEventListener('click', function () {
+      var form = document.getElementById('book');
+      if (!form) return;
+      var h = parseInt(slot.dataset.hour, 10);
+      var pad = function (n) { return (n < 10 ? '0' : '') + n; };
+      document.getElementById('f-space').value = slot.dataset.space;
+      document.getElementById('f-day').value = '{{ day.isoformat() }}';
+      document.getElementById('f-start').value = pad(h) + ':00';
+      document.getElementById('f-end').value = pad(Math.min(h + 1, 23)) + ':00';
+      var smooth = !window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      form.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'center' });
+      form.classList.remove('is-pulled'); void form.offsetWidth; form.classList.add('is-pulled');
+      document.getElementById('f-end').focus({ preventScroll: true });
+    });
+  });
+</script>
 {% endblock %}

@@ -1,0 +1,122 @@
+{# Day booking board. Expects: rows, hours, now_pos, day, day_label, is_today,
+   prev_day, next_day, today, base_url, interactive (bool). #}
+<style>
+  .board { padding: 0; overflow: hidden; }
+  .board-nav { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 18px 24px; border-bottom: 1px solid var(--line); flex-wrap: wrap; }
+  .board-day { display: flex; align-items: center; gap: 12px; }
+  .board-day h2 { font-size: 18px; font-weight: 500; }
+  .board-day h2::first-letter { text-transform: uppercase; }
+  .day-step { width: 36px; height: 36px; border-radius: 50%; display: grid; place-items: center; border: 1px solid var(--line); color: var(--ink); text-decoration: none; background: var(--paper); }
+  .day-step:hover { background: var(--fog); }
+  .day-step.is-disabled { opacity: .35; pointer-events: none; }
+  .board-tools { display: flex; align-items: center; gap: 10px; }
+  .board-tools input[type=date] { height: 36px; width: auto; font-size: 14px; }
+  .board-scroll { overflow-x: auto; }
+  .board-grid { min-width: 860px; }
+  .board-row, .board-head { display: grid; grid-template-columns: 210px 1fr; }
+  .board-head { border-bottom: 1px solid var(--line); background: #F8FAF8; }
+  .board-head > div:first-child { border-right: 1px solid var(--line); }
+  .ticks { position: relative; display: grid; grid-template-columns: repeat({{ hours|length }}, 1fr); }
+  .ticks span { padding: 10px 0 10px 6px; font-size: 12px; color: var(--stone); font-variant-numeric: tabular-nums; border-left: 1px solid var(--line); }
+  .space-cell { padding: 16px 20px 16px 24px; border-right: 1px solid var(--line); display: flex; flex-direction: column; justify-content: center; gap: 2px; }
+  .space-cell b { font-weight: 600; font-size: 15px; line-height: 1.3; }
+  .space-cell span { font-size: 13px; color: var(--stone); }
+  .board-row + .board-row { border-top: 1px solid var(--line); }
+  .track { position: relative; min-height: 68px; }
+  .slots { position: absolute; inset: 0; display: grid; grid-template-columns: repeat({{ hours|length }}, 1fr); }
+  .slot { border: 0; border-left: 1px solid var(--line); background: transparent; padding: 0; margin: 0; }
+  .slot:nth-child(odd) { background: rgba(31,61,51,.018); }
+  .slot.is-past { background: repeating-linear-gradient(135deg, transparent 0 6px, rgba(95,106,100,.07) 6px 7px); }
+  .is-interactive .slot:not(:disabled) { cursor: pointer; }
+  .is-interactive .slot:not(:disabled):hover { background: var(--moss-soft); box-shadow: inset 0 0 0 2px var(--moss); border-radius: 6px; }
+  .block {
+    position: absolute; top: 10px; bottom: 10px; border-radius: 10px;
+    background: var(--busy); color: var(--pine); padding: 6px 10px; overflow: hidden;
+    display: flex; flex-direction: column; justify-content: center; gap: 1px; pointer-events: none;
+    transform-origin: left center; animation: grow .6s cubic-bezier(.2,.8,.2,1) both;
+    animation-delay: calc(var(--i, 0) * 60ms + 120ms);
+  }
+  .block.mine { background: var(--sun); color: #3D2A00; box-shadow: 0 2px 0 rgba(107,74,8,.25); }
+  .b-time { font: 600 12px/1.2 var(--body); font-variant-numeric: tabular-nums; white-space: nowrap; }
+  .b-label { font-size: 12px; opacity: .8; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  @keyframes grow { from { transform: scaleX(0); opacity: 0; } to { transform: scaleX(1); opacity: 1; } }
+  .now { position: absolute; top: 0; bottom: 0; width: 2px; background: var(--rose); pointer-events: none; z-index: 2; }
+  .now::before { content: ""; position: absolute; top: -1px; left: -4px; width: 10px; height: 10px; border-radius: 50%; background: var(--rose); }
+  .board-foot { display: flex; gap: 20px; flex-wrap: wrap; align-items: center; padding: 14px 24px; border-top: 1px solid var(--line); font-size: 13px; color: var(--stone); }
+  .key { display: inline-flex; align-items: center; gap: 8px; }
+  .key i { width: 22px; height: 12px; border-radius: 4px; display: inline-block; }
+  .board-empty { padding: 48px 24px; text-align: center; color: var(--stone); }
+  .board-empty strong { display: block; color: var(--ink); font-size: 17px; margin-bottom: 4px; }
+  @media (max-width: 640px) {
+    .board-nav, .board-foot { padding-left: 16px; padding-right: 16px; }
+    .board-row, .board-head { grid-template-columns: 150px 1fr; }
+    .space-cell { padding: 12px 14px; position: sticky; left: 0; background: var(--paper); z-index: 3; }
+  }
+</style>
+
+<section class="panel board {{ 'is-interactive' if interactive }}" aria-label="Розклад на день">
+  <div class="board-nav">
+    <div class="board-day">
+      <a class="day-step {{ 'is-disabled' if interactive and is_today }}" href="{{ base_url }}?day={{ prev_day.isoformat() }}" aria-label="Попередній день">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3L5 8l5 5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+      <h2>{{ 'Сьогодні, ' if is_today }}{{ day_label }}</h2>
+      <a class="day-step" href="{{ base_url }}?day={{ next_day.isoformat() }}" aria-label="Наступний день">
+        <svg width="16" height="16" viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3l5 5-5 5" stroke="currentColor" stroke-width="1.8" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>
+      </a>
+    </div>
+    <form class="board-tools" method="get" action="{{ base_url }}">
+      {% if not is_today %}<a class="btn btn-quiet btn-sm" href="{{ base_url }}">Сьогодні</a>{% endif %}
+      <input type="date" name="day" value="{{ day.isoformat() }}" {% if interactive %}min="{{ today.isoformat() }}"{% endif %} onchange="this.form.submit()" aria-label="Обрати дату">
+    </form>
+  </div>
+
+  {% if rows %}
+  <div class="board-scroll">
+    <div class="board-grid">
+      <div class="board-head">
+        <div></div>
+        <div class="ticks">{% for h in hours %}<span>{{ '%02d'|format(h.hour) }}:00</span>{% endfor %}</div>
+      </div>
+      {% set ns = namespace(i=0) %}
+      {% for row in rows %}
+      <div class="board-row">
+        <div class="space-cell">
+          <b>{{ row.space.name }}</b>
+          <span>{{ row.space.space_type|kind }}, {{ row.space.capacity|seats }}</span>
+        </div>
+        <div class="track">
+          <div class="slots">
+            {% for h in hours %}
+            <button type="button" class="slot {{ 'is-past' if h.past }}"
+                    data-space="{{ row.space.id }}" data-hour="{{ h.hour }}"
+                    {% if h.past or not interactive %}disabled{% endif %}
+                    {% if interactive and not h.past %}aria-label="Забронювати {{ row.space.name }} о {{ h.hour }}:00"{% else %}tabindex="-1" aria-hidden="true"{% endif %}></button>
+            {% endfor %}
+          </div>
+          {% for b in row.blocks %}
+          <div class="block {{ 'mine' if b.mine }}" style="left: {{ b.left }}%; width: {{ b.width }}%; --i: {{ ns.i }}" title="{{ b.time }} {{ b.label }}">
+            <span class="b-time">{{ b.time }}</span>
+            <span class="b-label">{{ b.label }}</span>
+          </div>
+          {% set ns.i = ns.i + 1 %}
+          {% endfor %}
+          {% if now_pos is not none %}<div class="now" style="left: {{ now_pos }}%" aria-hidden="true"></div>{% endif %}
+        </div>
+      </div>
+      {% endfor %}
+    </div>
+  </div>
+  <div class="board-foot">
+    {% if interactive %}<span class="key"><i style="background: var(--sun)"></i>Ваші бронювання</span>{% endif %}
+    <span class="key"><i style="background: var(--busy)"></i>{{ 'Бронювання' if not interactive else 'Зайнято' }}</span>
+    <span class="key"><i style="background: var(--rose); width: 2px; height: 14px; border-radius: 1px"></i>Зараз</span>
+    {% if interactive %}<span>Натисніть на вільну годину, щоб заповнити форму.</span>{% endif %}
+  </div>
+  {% else %}
+  <div class="board-empty">
+    <strong>Просторів поки немає</strong>
+    {{ 'Додайте перший простір нижче — і він зʼявиться в розкладі.' if not interactive else 'Щойно адміністратор додасть простори, тут зʼявиться розклад.' }}
+  </div>
+  {% endif %}
+</section>

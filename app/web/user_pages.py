@@ -9,17 +9,26 @@ from datetime import date, time
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, Response
 from sqlalchemy import select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, joinedload
 
 from app.core.deps import get_current_user_optional
 from app.core.security import hash_password, verify_password
 from app.database import get_db
 from app.models.booking import Booking, BookingStatus
-from app.models.space import Space
 from app.models.user import User
 from app.services import bookings as booking_service
+from app.services.bookings import to_utc
 from app.services.errors import DomainError
-from app.web.common import combine_local, flash, forbidden, redirect, templates
+from app.web.common import (
+    combine_local,
+    flash,
+    forbidden,
+    local_now,
+    parse_day,
+    redirect,
+    schedule_context,
+    templates,
+)
 
 router = APIRouter(include_in_schema=False)
 
@@ -39,6 +48,14 @@ def ua(detail: str) -> str:
     return ERRORS_UA.get(detail, detail)
 
 
+def _greeting(hour: int) -> str:
+    if 5 <= hour < 12:
+        return "Доброго ранку"
+    if 12 <= hour < 18:
+        return "Добрий день"
+    return "Добрий вечір"
+
+
 @router.get("/home", response_class=HTMLResponse)
 def user_home(
     request: Request,
@@ -49,23 +66,32 @@ def user_home(
         return redirect("/login")
     if user.is_admin:
         return redirect("/admin")
+    day = parse_day(request.query_params.get("day"))
+    now = local_now()
     bookings = db.scalars(
         select(Booking)
+        .options(joinedload(Booking.space))
         .where(Booking.user_id == user.id)
-        .order_by(Booking.start_time.desc())
+        .order_by(Booking.start_time)
     ).all()
-    spaces = db.scalars(
-        select(Space).where(Space.is_active.is_(True)).order_by(Space.id)
-    ).all()
+    upcoming = [
+        b
+        for b in bookings
+        if b.status == BookingStatus.CONFIRMED and to_utc(b.end_time) > now
+    ]
+    history = [b for b in reversed(bookings) if b not in upcoming]
     return templates.TemplateResponse(
         request,
         "home_user.html",
         {
             "user": user,
-            "bookings": bookings,
-            "spaces": spaces,
-            "today": date.today().isoformat(),
+            "first_name": user.full_name.split()[0],
+            "greeting": _greeting(now.hour),
+            "upcoming": upcoming,
+            "history": history[:20],
+            "next_booking": upcoming[0] if upcoming else None,
             "confirmed": BookingStatus.CONFIRMED,
+            **schedule_context(db, day, user),
             **flash(request),
         },
     )
@@ -91,8 +117,8 @@ def create_booking(
             end=combine_local(day, end),
         )
     except DomainError as exc:
-        return redirect("/home", err=ua(exc.detail))
-    return redirect("/home", msg="Бронювання створено")
+        return redirect("/home", err=ua(exc.detail), day=day)
+    return redirect("/home", msg="Бронювання створено", day=day)
 
 
 @router.post("/home/bookings/{booking_id}/cancel")

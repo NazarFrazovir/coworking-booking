@@ -1,89 +1,136 @@
 {% extends "base.html" %}
 {% block title %}Адмін-панель — CoWork Booking{% endblock %}
+{% block head %}
+<style>
+  .admin-head { display: flex; justify-content: space-between; align-items: flex-end; gap: 24px; flex-wrap: wrap; }
+  .admin-head p { color: var(--stone); margin-top: 8px; }
+  .facts { display: flex; gap: 10px; flex-wrap: wrap; }
+  .fact { background: var(--paper); border: 1px solid var(--line); border-radius: 999px; padding: 8px 16px 8px 8px; display: inline-flex; align-items: center; gap: 10px; font-size: 14px; color: var(--stone); }
+  .fact b { min-width: 30px; height: 30px; padding: 0 8px; border-radius: 999px; display: inline-grid; place-items: center; background: var(--pine); color: #fff; font: 700 14px/1 var(--display); }
+  .fact.sun b { background: var(--sun); color: #3D2A00; }
+
+  .jump { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 40px; position: sticky; top: 58px; z-index: 10; padding: 10px 0; background: var(--fog); }
+  .jump a { padding: 8px 16px; border-radius: 999px; background: var(--paper); border: 1px solid var(--line); color: var(--ink); text-decoration: none; font-weight: 500; font-size: 14px; }
+  .jump a:hover { border-color: var(--moss); color: var(--moss); }
+  section[id] { scroll-margin-top: 120px; }
+
+  .add-space { display: grid; grid-template-columns: 1.4fr 1.2fr 1fr .7fr auto; gap: 14px; align-items: end; padding: 20px 24px; border-bottom: 1px solid var(--line); background: #F8FAF8; border-radius: var(--r-lg) var(--r-lg) 0 0; }
+  .who { display: flex; align-items: center; gap: 12px; }
+  .who .avatar { width: 32px; height: 32px; font-size: 12px; background: var(--moss-soft); }
+  .who .avatar.is-admin { background: var(--pine); color: #fff; }
+  .who b { display: block; font-weight: 600; }
+  .who span { font-size: 13px; color: var(--stone); }
+  .is-dim td:not(:last-child) { opacity: .5; }
+  @media (max-width: 900px) { .add-space { grid-template-columns: 1fr 1fr; } .add-space .btn { grid-column: 1 / -1; } }
+</style>
+{% endblock %}
+
 {% block content %}
-<div class="card">
-  <h2>Адмін-панель</h2>
-  <div class="stats">
-    <div class="stat"><b>{{ stats.users }}</b><span class="muted">користувачів</span></div>
-    <div class="stat"><b>{{ stats.admins }}</b><span class="muted">адміністраторів</span></div>
-    <div class="stat"><b>{{ stats.active_spaces }}</b><span class="muted">активних просторів</span></div>
-    <div class="stat"><b>{{ stats.confirmed_bookings }}</b><span class="muted">активних бронювань</span></div>
+<section class="admin-head">
+  <div>
+    <h1>Адмін-панель</h1>
+    <p>Простори, користувачі й усі бронювання коворкінгу.</p>
   </div>
+  <div class="facts">
+    <span class="fact"><b>{{ stats.users }}</b>користувачів</span>
+    <span class="fact"><b>{{ stats.admins }}</b>адмінів</span>
+    <span class="fact"><b>{{ stats.active_spaces }}</b>просторів</span>
+    <span class="fact sun"><b>{{ stats.confirmed_bookings }}</b>активних бронювань</span>
+  </div>
+</section>
+
+<div class="section">
+  {% set base_url = "/admin" %}{% set interactive = false %}
+  {% include "_schedule.html" %}
 </div>
 
-<nav class="tabs"><a href="#spaces">Простори</a><a href="#users">Користувачі</a><a href="#bookings">Бронювання</a></nav>
+<nav class="jump" aria-label="Розділи">
+  <a href="#spaces">Простори</a><a href="#users">Користувачі</a><a href="#bookings">Бронювання</a>
+</nav>
 
-<div class="card" id="spaces">
-  <h3>Простори</h3>
-  <form method="post" action="/admin/spaces" style="margin-bottom:18px">
-    <div class="grid">
-      <div><label>Назва</label><input name="name" required placeholder="Переговорна Карпати"></div>
-      <div><label>Розташування</label><input name="location" required placeholder="2 поверх"></div>
-      <div><label>Тип</label>
-        <select name="space_type"><option value="meeting">meeting — переговорна</option><option value="desk">desk — робоче місце</option><option value="office">office — кабінет</option><option value="hall">hall — зала</option></select>
-      </div>
-      <div><label>Місткість</label><input name="capacity" type="number" min="1" max="500" value="4" required></div>
-      <div><button type="submit">Додати простір</button></div>
+<section class="section panel" id="spaces" style="margin-top: 16px">
+  <form class="add-space" method="post" action="/admin/spaces">
+    <div><label for="s-name">Назва</label><input id="s-name" name="name" required placeholder="Переговорна Карпати"></div>
+    <div><label for="s-loc">Де знаходиться</label><input id="s-loc" name="location" required placeholder="2 поверх, біля кухні"></div>
+    <div><label for="s-type">Тип</label>
+      <select id="s-type" name="space_type">
+        <option value="meeting">Переговорна</option><option value="desk">Робоче місце</option>
+        <option value="office">Кабінет</option><option value="hall">Зала</option>
+      </select>
     </div>
+    <div><label for="s-cap">Місткість</label><input id="s-cap" name="capacity" type="number" min="1" max="500" value="6" required></div>
+    <button class="btn" type="submit">Додати простір</button>
   </form>
-  {% if spaces %}
+  {% if all_spaces %}
   <div class="table-wrap"><table>
-    <tr><th>#</th><th>Назва</th><th>Тип</th><th>Місткість</th><th>Розташування</th><th>Статус</th><th></th></tr>
-    {% for s in spaces %}
-    <tr>
-      <td>{{ s.id }}</td><td>{{ s.name }}</td><td>{{ s.space_type }}</td><td>{{ s.capacity }}</td><td>{{ s.location }}</td>
-      <td><span class="badge {{ 'on' if s.is_active else 'off' }}">{{ 'активний' if s.is_active else 'прихований' }}</span></td>
-      <td><form class="inline" method="post" action="/admin/spaces/{{ s.id }}/toggle">
-        <button class="small {{ 'danger' if s.is_active else 'ghost' }}" type="submit">{{ 'Приховати' if s.is_active else 'Активувати' }}</button>
-      </form></td>
+    <tr><th>#</th><th>Простір</th><th>Тип</th><th>Місткість</th><th>Статус</th><th></th></tr>
+    {% for s in all_spaces %}
+    <tr class="{{ 'is-dim' if not s.is_active }}">
+      <td class="num">{{ s.id }}</td>
+      <td><div class="who" style="gap:0"><div><b>{{ s.name }}</b><span>{{ s.location }}</span></div></div></td>
+      <td>{{ s.space_type|kind }}</td>
+      <td>{{ s.capacity|seats }}</td>
+      <td>{% if s.is_active %}<span class="tag tag-ok">Доступний</span>{% else %}<span class="tag tag-off">Прихований</span>{% endif %}</td>
+      <td><div class="actions"><form class="inline" method="post" action="/admin/spaces/{{ s.id }}/toggle">
+        <button class="btn btn-sm {{ 'btn-danger' if s.is_active else 'btn-quiet' }}" type="submit">{{ 'Приховати' if s.is_active else 'Повернути' }}</button>
+      </form></div></td>
     </tr>
     {% endfor %}
   </table></div>
-  {% else %}<p class="muted">Просторів ще немає — додайте перший.</p>{% endif %}
-</div>
+  {% else %}
+  <div class="empty"><strong>Тут поки порожньо</strong>Додайте перший простір у формі вище.</div>
+  {% endif %}
+</section>
 
-<div class="card" id="users">
-  <h3>Користувачі</h3>
-  <div class="table-wrap"><table>
-    <tr><th>#</th><th>Ім'я</th><th>Email</th><th>Роль</th><th>Статус</th><th>Дії</th></tr>
+<section class="section" id="users">
+  <div class="section-head"><h2>Користувачі</h2></div>
+  <div class="panel table-wrap"><table>
+    <tr><th>#</th><th>Користувач</th><th>Роль</th><th>Статус</th><th></th></tr>
     {% for u in users %}
-    <tr>
-      <td>{{ u.id }}</td><td>{{ u.full_name }}</td><td>{{ u.email }}</td>
-      <td><span class="badge {{ 'admin' if u.is_admin }}">{{ u.role }}</span></td>
-      <td><span class="badge {{ 'on' if u.is_active else 'off' }}">{{ 'активний' if u.is_active else 'заблокований' }}</span></td>
-      <td>{% if u.id != user.id %}<div class="row-actions">
+    <tr class="{{ 'is-dim' if not u.is_active }}">
+      <td class="num">{{ u.id }}</td>
+      <td><div class="who"><div class="avatar {{ 'is-admin' if u.is_admin }}">{{ u.full_name[:1]|upper }}</div><div><b>{{ u.full_name }}</b><span>{{ u.email }}</span></div></div></td>
+      <td>{% if u.is_admin %}<span class="tag tag-sun">Адміністратор</span>{% else %}<span class="tag tag-neutral">Користувач</span>{% endif %}</td>
+      <td>{% if u.is_active %}<span class="tag tag-ok">Активний</span>{% else %}<span class="tag tag-off">Заблокований</span>{% endif %}</td>
+      <td>{% if u.id != user.id %}<div class="actions">
         <form class="inline" method="post" action="/admin/users/{{ u.id }}/role">
           <input type="hidden" name="role" value="{{ 'user' if u.is_admin else 'admin' }}">
-          <button class="small ghost" type="submit">{{ 'Зробити user' if u.is_admin else 'Зробити admin' }}</button>
+          <button class="btn btn-quiet btn-sm" type="submit">{{ 'Зняти права адміна' if u.is_admin else 'Зробити адміном' }}</button>
         </form>
         <form class="inline" method="post" action="/admin/users/{{ u.id }}/toggle-active">
-          <button class="small {{ 'danger' if u.is_active else 'ghost' }}" type="submit">{{ 'Заблокувати' if u.is_active else 'Розблокувати' }}</button>
+          <button class="btn btn-sm {{ 'btn-danger' if u.is_active else 'btn-quiet' }}" type="submit">{{ 'Заблокувати' if u.is_active else 'Розблокувати' }}</button>
         </form>
-      </div>{% else %}<span class="muted">це ви</span>{% endif %}</td>
+      </div>{% else %}<div class="actions"><span class="muted small">Це ви</span></div>{% endif %}</td>
     </tr>
     {% endfor %}
   </table></div>
-</div>
+</section>
 
-<div class="card" id="bookings">
-  <h3>Усі бронювання</h3>
+<section class="section" id="bookings">
+  <div class="section-head"><h2>Усі бронювання</h2></div>
   {% if bookings %}
-  <div class="table-wrap"><table>
-    <tr><th>#</th><th>Користувач</th><th>Простір</th><th>Початок</th><th>Кінець</th><th>Статус</th><th></th></tr>
+  <div class="panel table-wrap"><table>
+    <tr><th>#</th><th>Хто</th><th>Простір</th><th>Коли</th><th>Статус</th><th></th></tr>
     {% for b in bookings %}
     <tr>
-      <td>{{ b.id }}</td><td>{{ b.user.email }}</td><td>{{ b.space.name }}</td>
-      <td>{{ b.start_time|local }}</td><td>{{ b.end_time|local('%H:%M') }}</td>
-      <td><span class="badge {{ b.status }}">{{ 'активне' if b.status == confirmed else 'скасоване' }}</span></td>
-      <td>{% if b.status == confirmed %}
+      <td class="num">{{ b.id }}</td>
+      <td>{{ b.user.full_name }}<br><span class="muted small">{{ b.user.email }}</span></td>
+      <td>{{ b.space.name }}</td>
+      <td>{{ b.start_time|local('%d.%m.%Y') }}<br><span class="muted small">{{ b.start_time|local('%H:%M') }}–{{ b.end_time|local('%H:%M') }}</span></td>
+      <td>{% if b.status == confirmed %}<span class="tag tag-ok">Активне</span>{% else %}<span class="tag tag-off">Скасоване</span>{% endif %}</td>
+      <td><div class="actions">{% if b.status == confirmed %}
         <form class="inline" method="post" action="/admin/bookings/{{ b.id }}/cancel" onsubmit="return confirm('Скасувати бронювання #{{ b.id }}?')">
-          <button class="small danger" type="submit">Скасувати</button>
-        </form>{% endif %}</td>
+          <button class="btn btn-danger btn-sm" type="submit">Скасувати</button>
+        </form>{% endif %}</div></td>
     </tr>
     {% endfor %}
   </table></div>
-  {% else %}<p class="muted">Бронювань ще немає.</p>{% endif %}
-</div>
+  {% else %}
+  <div class="panel empty"><strong>Бронювань ще немає</strong>Вони зʼявляться тут, щойно користувачі почнуть бронювати.</div>
+  {% endif %}
+</section>
 
-{% include "_profile.html" %}
+<section class="section">
+  {% include "_profile.html" %}
+</section>
 {% endblock %}

@@ -1,16 +1,13 @@
-{% extends "base.html" %}
+{% extends "_auth.html" %}
 {% block title %}Вхід — CoWork Booking{% endblock %}
-{% block content %}
-<div class="card narrow">
-  <h2>Вхід</h2>
-  {% if error %}<div class="error">{{ error }}</div>{% endif %}
-  <form method="post" action="/login">
-    <label for="email">Email</label>
-    <input id="email" name="email" type="email" value="{{ email or '' }}" required>
-    <label for="password">Пароль</label>
-    <input id="password" name="password" type="password" required>
-    <button type="submit">Увійти</button>
-  </form>
-  <p class="muted">Немає акаунта? <a href="/register">Зареєструватися</a></p>
-</div>
+{% block auth %}
+<h2>З поверненням</h2>
+<p>Увійдіть, щоб побачити розклад і свої бронювання.</p>
+<form method="post" action="/login">
+  {% if error %}<div class="auth-err" role="alert">{{ error }}</div>{% endif %}
+  <div><label for="email">Email</label><input id="email" name="email" type="email" value="{{ email or '' }}" autocomplete="email" required autofocus></div>
+  <div><label for="password">Пароль</label><input id="password" name="password" type="password" autocomplete="current-password" required></div>
+  <button class="btn" type="submit">Увійти</button>
+</form>
+<p class="auth-switch">Ще немає акаунта? <a href="/register">Зареєструватися</a></p>
 {% endblock %}

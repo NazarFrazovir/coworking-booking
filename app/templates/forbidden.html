@@ -1,9 +1,10 @@
 {% extends "base.html" %}
-{% block title %}Доступ заборонено{% endblock %}
+{% block title %}Немає доступу — CoWork Booking{% endblock %}
 {% block content %}
-<div class="card narrow">
-  <h2>403 — доступ заборонено</h2>
-  <p>Ця сторінка доступна лише адміністраторам.</p>
-  <p><a href="/home">На мою сторінку</a></p>
+<div class="panel panel-pad" style="max-width: 520px; margin: 48px auto; text-align: center; padding: 48px 32px;">
+  <div style="font: 700 64px/1 var(--display); color: var(--pine); letter-spacing: -0.03em;">403</div>
+  <h2 style="margin-top: 16px;">Ця сторінка лише для адміністраторів</h2>
+  <p class="muted" style="margin: 10px auto 24px; max-width: 36ch;">Ваш акаунт не має прав на цю дію. Якщо доступ потрібен, зверніться до адміністратора коворкінгу.</p>
+  <a class="btn" href="/home">До мого розкладу</a>
 </div>
 {% endblock %}
