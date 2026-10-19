@@ -1,0 +1,30 @@
+# One PostgreSQL per environment. The SAME file is started as two
+# separate compose projects, so containers, volumes and ports never mix:
+#
+#   docker compose --env-file .env.sandbox    -p cowork-sandbox    up -d
+#   docker compose --env-file .env.production -p cowork-production up -d
+#
+# (or simply: make db-sandbox / make db-production)
+#
+# Credentials and the host port come from the env file — nothing secret
+# is written here.
+services:
+  db:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in the env file}
+      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in the env file}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in the env file}
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:?set POSTGRES_PORT in the env file}:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+
+volumes:
+  pgdata:

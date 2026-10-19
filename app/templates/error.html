@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% block title %}{{ 'Сторінку не знайдено' if status_code == 404 else 'Помилка сервера' }} — CoWork Booking{% endblock %}
+{% block content %}
+<div class="panel panel-pad" style="max-width: 540px; margin: 48px auto; text-align: center; padding: 48px 32px;">
+  <div style="font: 700 64px/1 var(--display); color: var(--pine); letter-spacing: -0.03em;">{{ status_code }}</div>
+  {% if status_code == 404 %}
+    <h2 style="margin-top: 16px;">Такої сторінки немає</h2>
+    <p class="muted" style="margin: 10px auto 24px; max-width: 38ch;">Можливо, посилання застаріло або в адресі помилка.</p>
+  {% else %}
+    <h2 style="margin-top: 16px;">Щось пішло не так на нашому боці</h2>
+    <p class="muted" style="margin: 10px auto 8px; max-width: 40ch;">Ваші дані в безпеці. Спробуйте ще раз за хвилину. Якщо помилка повториться, повідомте адміністратору код нижче.</p>
+    <p style="margin: 0 auto 24px;"><span class="tag tag-neutral" style="font-size: 15px;">Код помилки: {{ error_id }}</span></p>
+  {% endif %}
+  <a class="btn" href="/">На головну</a>
+</div>
+{% endblock %}

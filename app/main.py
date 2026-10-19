@@ -1,35 +1,60 @@
-"""CoWork Booking API entrypoint."""
+"""CoWork Booking entrypoint.
 
-from fastapi import FastAPI, Request
-from fastapi.responses import JSONResponse
+Run in the environment you want:
 
-from app.config import settings
+    APP_ENV=sandbox    uvicorn app.main:app --reload
+    APP_ENV=production uvicorn app.main:app --host 0.0.0.0 --port 8000
+
+``create_app`` takes the settings explicitly, so tests can build an app
+in any mode (e.g. production with DEBUG off) without touching env vars.
+"""
+
+import logging
+
+from fastapi import FastAPI
+
+from app.config import Settings, get_settings
+from app.core.errors import register_error_handlers
+from app.core.logging import configure_logging
 from app.routers import admin, auth, bookings, spaces, users
-from app.services.errors import DomainError
 from app.web import admin_pages, pages, user_pages
 
-app = FastAPI(title=settings.app_name)
-
-app.include_router(auth.router, prefix=settings.api_v1_prefix)
-app.include_router(users.router, prefix=settings.api_v1_prefix)
-app.include_router(spaces.router, prefix=settings.api_v1_prefix)
-app.include_router(bookings.router, prefix=settings.api_v1_prefix)
-app.include_router(admin.router, prefix=settings.api_v1_prefix)
-app.include_router(pages.router)
-app.include_router(user_pages.router)
-app.include_router(admin_pages.router)
+logger = logging.getLogger("app")
 
 
-@app.exception_handler(DomainError)
-def domain_error_handler(_request: Request, exc: DomainError) -> JSONResponse:
-    """Map business-rule violations raised by services to HTTP responses."""
-    headers = {"WWW-Authenticate": "Bearer"} if exc.status_code == 401 else None
-    return JSONResponse(
-        status_code=exc.status_code, content={"detail": exc.detail}, headers=headers
+def create_app(settings: Settings) -> FastAPI:
+    configure_logging(settings)
+
+    docs = settings.docs_enabled
+    app = FastAPI(
+        title=settings.app_name,
+        debug=settings.debug,
+        docs_url="/docs" if docs else None,
+        redoc_url="/redoc" if docs else None,
+        openapi_url="/openapi.json" if docs else None,
     )
 
+    prefix = settings.api_v1_prefix
+    for router in (auth, users, spaces, bookings, admin):
+        app.include_router(router.router, prefix=prefix)
+    for router in (pages, user_pages, admin_pages):
+        app.include_router(router.router)
 
-@app.get("/health", tags=["health"])
-def health_check() -> dict[str, str]:
-    """Liveness/readiness probe endpoint."""
-    return {"status": "ok", "environment": settings.environment}
+    register_error_handlers(app)
+
+    @app.get("/health", tags=["health"])
+    def health_check() -> dict[str, str]:
+        """Liveness probe. Shows which environment answered."""
+        return {"status": "ok", "environment": settings.app_env}
+
+    logger.info(
+        "Starting %s: APP_ENV=%s DEBUG=%s DB=%s",
+        settings.app_name,
+        settings.app_env,
+        settings.debug,
+        settings.safe_database_url,
+    )
+    return app
+
+
+app = create_app(get_settings())

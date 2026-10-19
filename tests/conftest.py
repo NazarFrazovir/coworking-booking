@@ -7,25 +7,37 @@ Set ``TEST_DATABASE_URL`` to run the very same suite against PostgreSQL:
     pytest
 
 Every test gets a fresh schema, so tests are fully independent.
+
+Isolation from real environments: APP_ENV and the app's own DATABASE_URL
+are FORCED below before anything from ``app`` is imported, so running
+pytest can never touch the sandbox or production database — even if the
+shell has APP_ENV=production exported.
 """
 
 import os
-from collections.abc import Callable, Generator
 
-import pytest
-from fastapi.testclient import TestClient
-from sqlalchemy import create_engine
-from sqlalchemy.engine import Engine
-from sqlalchemy.orm import Session, sessionmaker
-from sqlalchemy.pool import StaticPool
+os.environ["APP_ENV"] = "test"
+os.environ["DATABASE_URL"] = "sqlite://"
+os.environ["JWT_SECRET_KEY"] = "test-only-jwt-secret-not-used-anywhere-else"
+os.environ["DEBUG"] = "false"
+os.environ["DOCS_ENABLED"] = "true"
 
-import app.models  # noqa: F401  (register models on Base.metadata)
-from app.core.security import hash_password
-from app.database import Base, get_db
-from app.main import app as fastapi_app
-from app.models.space import Space
-from app.models.user import User, UserRole
-from tests.helpers import TEST_PASSWORD
+from collections.abc import Callable, Generator  # noqa: E402
+
+import pytest  # noqa: E402
+from fastapi.testclient import TestClient  # noqa: E402
+from sqlalchemy import create_engine  # noqa: E402
+from sqlalchemy.engine import Engine  # noqa: E402
+from sqlalchemy.orm import Session, sessionmaker  # noqa: E402
+from sqlalchemy.pool import StaticPool  # noqa: E402
+
+import app.models  # noqa: E402, F401  (register models on Base.metadata)
+from app.core.security import hash_password  # noqa: E402
+from app.database import Base, get_db  # noqa: E402
+from app.main import app as fastapi_app  # noqa: E402
+from app.models.space import Space  # noqa: E402
+from app.models.user import User, UserRole  # noqa: E402
+from tests.helpers import TEST_PASSWORD  # noqa: E402
 
 # bcrypt is intentionally slow; hash the shared test password only once.
 _TEST_PASSWORD_HASH = hash_password(TEST_PASSWORD)

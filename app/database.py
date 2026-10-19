@@ -1,4 +1,8 @@
-"""Database engine, session factory and declarative base."""
+"""Database engine, session factory and declarative base.
+
+The URL comes from the active environment's settings, so sandbox and
+production always talk to their own database.
+"""
 
 from collections.abc import Generator
 
@@ -7,7 +11,12 @@ from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
 
 from app.config import settings
 
-engine = create_engine(settings.database_url, pool_pre_ping=True, future=True)
+engine = create_engine(
+    settings.database_url_obj,
+    pool_pre_ping=True,
+    echo=settings.sql_echo,
+    future=True,
+)
 
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine, future=True)
 

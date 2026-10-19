@@ -18,6 +18,8 @@ from app.models.space import Space
 from app.models.user import User
 
 templates = Jinja2Templates(directory=Path(__file__).parent.parent / "templates")
+# Lets every page show which environment it is served from.
+templates.env.globals["app_env"] = settings.app_env
 
 LOCAL_TZ = ZoneInfo(settings.display_timezone)
 

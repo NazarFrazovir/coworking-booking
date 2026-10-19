@@ -1,0 +1,8 @@
+# Development, linting and testing. Production installs only requirements.txt.
+-r requirements.txt
+
+ruff==0.6.9
+black==24.8.0
+pre-commit==3.8.0
+pytest==8.3.3
+httpx==0.27.2
