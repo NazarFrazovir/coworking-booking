@@ -11,13 +11,18 @@ PY ?= python
 .PHONY: db-sandbox db-production migrate-sandbox migrate-production \
         setup-sandbox setup-production run-sandbox run-production \
         seed-sandbox lint test ci loadtest-seed loadtest-smoke \
-        loadtest-baseline loadtest-stress loadtest-report
+        loadtest-baseline loadtest-stress loadtest-report \
+        docker-up docker-dev docker-down docker-logs docker-admin
+
+# Only the database (published on localhost) for running the app outside
+# Docker. Uses the dev override, because the base file keeps the DB private.
+DB_ONLY = docker compose -f docker-compose.yml -f docker-compose.dev.yml
 
 db-sandbox:
-	docker compose --env-file .env.sandbox -p cowork-sandbox up -d --wait
+	$(DB_ONLY) --env-file .env.sandbox -p cowork-sandbox up -d --wait db
 
 db-production:
-	docker compose --env-file .env.production -p cowork-production up -d --wait
+	$(DB_ONLY) --env-file .env.production -p cowork-production up -d --wait db
 
 migrate-sandbox:
 	APP_ENV=sandbox alembic upgrade head
@@ -76,3 +81,21 @@ loadtest-stress:
 
 loadtest-report:
 	$(PY) -m loadtest.analyze
+
+# ---------- Docker (lab #5) ----------
+# cp config/.env.docker.example .env   (once)
+
+docker-up:
+	docker compose up --build -d --wait
+
+docker-dev:
+	docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+
+docker-down:
+	docker compose down
+
+docker-logs:
+	docker compose logs -f app
+
+docker-admin:
+	docker compose exec app python -m app.cli create-admin --email admin@example.com --name "Admin"

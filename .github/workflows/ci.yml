@@ -4,6 +4,8 @@
 #   2. tests     — pytest on SQLite (fast) for Python 3.12 and 3.13
 #   3. postgres  — Alembic migrations + the full pytest suite on a real
 #                  PostgreSQL 16, the same engine production uses
+#   4. docker    — `docker compose up --build` of the whole system on the
+#                  official images, API smoke test, data persistence
 # The pull request can be merged only when all jobs are green
 # (enable "Require status checks" in the branch protection settings).
 name: CI
@@ -141,3 +143,57 @@ jobs:
         run: |
           alembic downgrade base
           pytest -v
+
+  docker:
+    name: Docker image + compose
+    runs-on: ubuntu-latest
+    needs: lint
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Prepare .env from the template
+        run: |
+          cp config/.env.docker.example .env
+          secret=$(python3 -c "import secrets; print(secrets.token_urlsafe(48))")
+          sed -i "s/^JWT_SECRET_KEY=.*/JWT_SECRET_KEY=$secret/" .env
+
+      - name: docker compose up --build (waits for healthchecks)
+        run: docker compose up --build -d --wait --wait-timeout 180
+
+      - name: API works and migrations ran
+        run: |
+          curl -fsS localhost:8000/health
+          curl -fsS localhost:8000/api/v1/spaces/ | grep -q "Карпати"
+          curl -fsS -X POST localhost:8000/api/v1/auth/register \
+            -H 'content-type: application/json' \
+            -d '{"full_name":"CI User","email":"ci@example.com","password":"password123"}'
+          docker compose exec -T db psql -U cowork_sandbox -d coworking_sandbox \
+            -tAc "select version_num from alembic_version" | grep -q 0001
+
+      - name: Data survives docker compose down / up
+        run: |
+          docker compose down
+          docker compose up -d --wait --wait-timeout 120
+          docker compose exec -T db psql -U cowork_sandbox -d coworking_sandbox \
+            -tAc "select count(*) from users where email='ci@example.com'" | grep -qx 1
+
+      - name: Database is isolated (internal network, no host port)
+        run: |
+          test "$(docker network inspect coworking-booking_backend --format '{{.Internal}}')" = true
+          ! docker compose port db 5432
+
+      - name: Image report (multi-stage effect)
+        run: |
+          docker build -q --target builder -t coworking-booking:builder .
+          docker image ls --format 'table {{.Repository}}:{{.Tag}}\t{{.Size}}' \
+            | grep -E 'REPOSITORY|coworking-booking'
+          docker run --rm --entrypoint sh coworking-booking:latest -c \
+            'echo "user: $(id -un)"; if command -v gcc; then exit 1; else echo "no compiler in final image"; fi'
+
+      - name: Logs on failure
+        if: failure()
+        run: docker compose logs
+
+      - name: Clean up
+        if: always()
+        run: docker compose down -v

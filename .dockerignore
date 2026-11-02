@@ -1,0 +1,44 @@
+# Only what the image needs goes into the build context: the app code,
+# migrations, requirements and the entrypoint. Everything else stays out —
+# smaller context, faster builds, and no secrets inside the image.
+
+# VCS / CI
+.git
+.github
+.gitignore
+.pre-commit-config.yaml
+
+# Python caches and local environments
+__pycache__/
+**/__pycache__/
+*.py[cod]
+.venv/
+venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# Secrets: real environment files are never baked into an image;
+# configuration comes from environment variables at runtime.
+.env
+.env.*
+
+# Logs, test results, local data
+*.log
+logs/
+loadtest/
+*.db
+*.sqlite3
+
+# Not needed at runtime
+tests/
+docs/
+config/
+*.md
+Makefile
+Dockerfile
+docker-compose*.yml
+.idea/
+.vscode/
+.DS_Store

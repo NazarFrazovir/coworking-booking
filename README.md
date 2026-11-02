@@ -25,6 +25,29 @@
 - **CI:** GitHub Actions (ruff, black, pytest на SQLite і PostgreSQL)
 - **Якість коду:** ruff, black, pre-commit
 
+## Швидкий старт у Docker (одна команда)
+
+Потрібен лише Docker Desktop.
+
+```bash
+cp config/.env.docker.example .env      # один раз; задайте свої паролі
+docker compose up --build
+```
+
+Відкрийте http://localhost:8000. Під час старту контейнер сам застосовує
+міграції БД, а в sandbox додає демо-дані. Адміністратора створює команда
+`make docker-admin`.
+
+| Команда | Що робить |
+|---|---|
+| `docker compose up --build` | збирає образ і запускає застосунок + PostgreSQL |
+| `docker compose down` | зупиняє; **дані БД зберігаються** у томі `pgdata` |
+| `docker compose down -v` | зупиняє й **видаляє** дані |
+| `make docker-dev` | режим розробки: код з диска, авто-перезапуск при збереженні |
+| `docker compose logs -f app` | логи застосунку |
+
+Детально — [docs/lab5-docker.md](docs/lab5-docker.md).
+
 ## Середовища
 
 | | Sandbox (тестове) | Production (робоче) |
@@ -77,7 +100,7 @@ make run-sandbox      # http://127.0.0.1:8000 з авто-перезаванта
 Без `make` — ті самі команди:
 
 ```bash
-docker compose --env-file .env.sandbox -p cowork-sandbox up -d --wait
+docker compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.sandbox -p cowork-sandbox up -d --wait db
 APP_ENV=sandbox alembic upgrade head
 APP_ENV=sandbox python -m app.cli seed-demo
 APP_ENV=sandbox uvicorn app.main:app --reload
@@ -101,7 +124,7 @@ make run-production     # http://127.0.0.1:8080, 2 воркери, без reload
 Без `make`:
 
 ```bash
-docker compose --env-file .env.production -p cowork-production up -d --wait
+docker compose -f docker-compose.yml -f docker-compose.dev.yml --env-file .env.production -p cowork-production up -d --wait db
 APP_ENV=production alembic upgrade head
 APP_ENV=production uvicorn app.main:app --host 0.0.0.0 --port 8080 --workers 2
 ```
@@ -141,7 +164,10 @@ coworking-booking/
 ├── tests/               # unit/ + integration/
 ├── loadtest/            # Locust-сценарії, монітор ресурсів, аналіз, результати
 ├── .github/workflows/   # ci.yml
-├── docker-compose.yml   # PostgreSQL на одне середовище (запускається двічі)
+├── Dockerfile           # multi-stage образ застосунку
+├── docker-compose.yml   # застосунок + PostgreSQL, мережі, том, healthcheck
+├── docker-compose.dev.yml # режим розробки: bind mount + --reload
+├── docker/entrypoint.sh # міграції перед стартом сервера
 ├── Makefile             # make setup-sandbox, make run-production, …
 ├── requirements.txt     # залежності застосунку (для production)
 └── requirements-dev.txt # + лінтери й тести
@@ -199,4 +225,5 @@ make loadtest-report      # таблиці й графіки в loadtest/results
 
 Рішення лабораторних: [ЛР2 — ролі та доступ](docs/lab2-auth.md),
 [ЛР3 — середовища та CI](docs/lab3-environments.md),
-[ЛР4 — навантажувальне тестування](docs/lab4-load-testing.md).
+[ЛР4 — навантажувальне тестування](docs/lab4-load-testing.md),
+[ЛР5 — Docker](docs/lab5-docker.md).

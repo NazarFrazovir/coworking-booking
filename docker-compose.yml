@@ -1,30 +1,81 @@
-# One PostgreSQL per environment. The SAME file is started as two
-# separate compose projects, so containers, volumes and ports never mix:
+# CoWork Booking — the whole system with one command:
 #
-#   docker compose --env-file .env.sandbox    -p cowork-sandbox    up -d
-#   docker compose --env-file .env.production -p cowork-production up -d
+#   cp config/.env.docker.example .env      # once; set your own secrets
+#   docker compose up --build
 #
-# (or simply: make db-sandbox / make db-production)
+# Docker Compose automatically reads the .env file next to this file and
+# substitutes ${VARIABLES} below. Nothing secret is written here.
 #
-# Credentials and the host port come from the env file — nothing secret
-# is written here.
+#   ┌──────────── network "frontend" ────────────┐
+#   │  host :8000  ──►  app (FastAPI, uvicorn)   │
+#   └───────────────────────┬────────────────────┘
+#              network "backend" (internal: no internet, no host ports)
+#                           ▼
+#                     db (PostgreSQL 16) ── volume "pgdata"
+#
+# Development with hot-reload: see docker-compose.dev.yml.
+name: coworking-booking
+
+x-db-credentials: &db-credentials
+  POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in .env}
+  POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in .env}
+  POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+
 services:
   db:
     image: postgres:16-alpine
     restart: unless-stopped
     environment:
-      POSTGRES_DB: ${POSTGRES_DB:?set POSTGRES_DB in the env file}
-      POSTGRES_USER: ${POSTGRES_USER:?set POSTGRES_USER in the env file}
-      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in the env file}
-    ports:
-      - "127.0.0.1:${POSTGRES_PORT:?set POSTGRES_PORT in the env file}:5432"
+      <<: *db-credentials
     volumes:
+      # Named volume: data survives `docker compose down` and container
+      # re-creation. Only `docker compose down -v` deletes it.
       - pgdata:/var/lib/postgresql/data
+    networks:
+      - backend
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $${POSTGRES_USER} -d $${POSTGRES_DB}"]
       interval: 3s
       timeout: 3s
       retries: 20
+      start_period: 5s
+
+  app:
+    build:
+      context: .
+      target: runtime
+    image: coworking-booking:latest
+    restart: unless-stopped
+    depends_on:
+      db:
+        # Start the app only when PostgreSQL really accepts connections,
+        # not merely when its container has started.
+        condition: service_healthy
+    environment:
+      <<: *db-credentials
+      APP_ENV: ${APP_ENV:-sandbox}
+      DEBUG: ${DEBUG:-false}
+      LOG_LEVEL: ${LOG_LEVEL:-INFO}
+      DOCS_ENABLED: ${DOCS_ENABLED:-true}
+      # Inside the compose network the database is reached by service name.
+      POSTGRES_HOST: db
+      POSTGRES_PORT: "5432"
+      JWT_SECRET_KEY: ${JWT_SECRET_KEY:?set JWT_SECRET_KEY in .env}
+      ACCESS_TOKEN_EXPIRE_MINUTES: ${ACCESS_TOKEN_EXPIRE_MINUTES:-60}
+      COOKIE_SECURE: ${COOKIE_SECURE:-false}
+      SEED_DEMO: ${SEED_DEMO:-false}
+    ports:
+      - "${APP_PORT:-8000}:8000"
+    networks:
+      - backend
+      - frontend
+
+networks:
+  # The database lives only here: no published ports, no route to the
+  # internet. Only containers attached to "backend" can reach it.
+  backend:
+    internal: true
+  frontend: {}
 
 volumes:
   pgdata:

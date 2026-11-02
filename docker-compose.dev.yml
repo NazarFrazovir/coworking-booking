@@ -1,0 +1,33 @@
+# Development mode: code from your disk is mounted into the container and
+# the server restarts on every saved file — no image rebuild needed.
+#
+#   docker compose -f docker-compose.yml -f docker-compose.dev.yml up --build
+#   (or: make docker-dev)
+#
+# This file only overrides what differs from docker-compose.yml.
+services:
+  app:
+    build:
+      target: dev
+    image: coworking-booking:dev
+    environment:
+      DEBUG: "true"
+      LOG_LEVEL: DEBUG
+      DOCS_ENABLED: "true"
+      # Docker Desktop on macOS/Windows does not always deliver file-change
+      # events through bind mounts; polling makes --reload reliable.
+      WATCHFILES_FORCE_POLLING: "true"
+    volumes:
+      # Bind mounts: host folders are visible inside the container live.
+      - ./app:/app/app
+      - ./migrations:/app/migrations
+      - ./tests:/app/tests
+
+  db:
+    # Also publish PostgreSQL to localhost, so a DB client (or the app run
+    # outside Docker, lab #3) can connect. Never done in the base file.
+    ports:
+      - "127.0.0.1:${POSTGRES_PORT:-5435}:5432"
+    networks:
+      - backend
+      - frontend
