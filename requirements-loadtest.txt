@@ -1,0 +1,5 @@
+# Load testing (lab #4). Not needed to run the app or the unit tests.
+-r requirements.txt
+locust==2.31.8
+psutil==6.1.0
+matplotlib==3.9.2

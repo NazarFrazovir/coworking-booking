@@ -10,7 +10,8 @@ PY ?= python
 
 .PHONY: db-sandbox db-production migrate-sandbox migrate-production \
         setup-sandbox setup-production run-sandbox run-production \
-        seed-sandbox lint test ci
+        seed-sandbox lint test ci loadtest-seed loadtest-smoke \
+        loadtest-baseline loadtest-stress loadtest-report
 
 db-sandbox:
 	docker compose --env-file .env.sandbox -p cowork-sandbox up -d --wait
@@ -45,3 +46,33 @@ test:
 	pytest
 
 ci: lint test
+
+# ---------- load testing (lab #4) ----------
+# Start the server first, in another terminal:
+#   APP_ENV=sandbox DEBUG=false LOG_LEVEL=WARNING \
+#     uvicorn app.main:app --port 8000 --workers 2 --no-access-log
+
+LT_HOST ?= http://127.0.0.1:8000
+LT_OUT = loadtest/results
+
+loadtest-seed:
+	APP_ENV=sandbox $(PY) -m loadtest.seed_users --users 300
+
+loadtest-smoke:
+	LOAD_PROFILE=smoke locust -f loadtest/locustfile.py --host $(LT_HOST) \
+		--headless --only-summary
+
+loadtest-baseline:
+	$(PY) -m loadtest.monitor --out $(LT_OUT)/baseline_resources.csv --duration 245 &
+	LOAD_PROFILE=baseline locust -f loadtest/locustfile.py --host $(LT_HOST) \
+		--headless --only-summary --csv $(LT_OUT)/baseline --csv-full-history \
+		--html $(LT_OUT)/baseline.html
+
+loadtest-stress:
+	$(PY) -m loadtest.monitor --out $(LT_OUT)/stress_resources.csv --duration 365 &
+	LOAD_PROFILE=stress locust -f loadtest/locustfile.py --host $(LT_HOST) \
+		--headless --only-summary --csv $(LT_OUT)/stress --csv-full-history \
+		--html $(LT_OUT)/stress.html
+
+loadtest-report:
+	$(PY) -m loadtest.analyze

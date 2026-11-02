@@ -1,0 +1,20 @@
+Method,Name,Error,Occurrences
+GET,GET /api/v1/spaces/[id]/availability,HTTPError('500 Server Error: Internal Server Error for url: GET /api/v1/spaces/[id]/availability'),25
+POST,POST /api/v1/bookings/,CatchResponseError('unexpected 401'),29
+GET,GET /api/v1/bookings/,HTTPError('500 Server Error: Internal Server Error for url: GET /api/v1/bookings/'),12
+GET,GET /api/v1/spaces/,HTTPError('500 Server Error: Internal Server Error for url: GET /api/v1/spaces/'),37
+GET,GET /api/v1/spaces/,RemoteDisconnected('Remote end closed connection without response'),1
+GET,GET /api/v1/bookings/,RemoteDisconnected('Remote end closed connection without response'),1
+GET,GET /api/v1/users/me,HTTPError('401 Client Error: Unauthorized for url: GET /api/v1/users/me'),21
+GET,GET /api/v1/bookings/,HTTPError('401 Client Error: Unauthorized for url: GET /api/v1/bookings/'),28
+GET,GET /api/v1/spaces/[id]/availability,"ConnectionResetError(104, 'Connection reset by peer')",2
+POST,POST /api/v1/bookings/,CatchResponseError('unexpected 0'),2
+GET,GET /api/v1/spaces/,"ConnectionResetError(104, 'Connection reset by peer')",17
+GET,GET /api/v1/users/me,HTTPError('500 Server Error: Internal Server Error for url: GET /api/v1/users/me'),7
+GET,GET /api/v1/bookings/,"ConnectionResetError(104, 'Connection reset by peer')",1
+GET,GET /login,"ConnectionResetError(104, 'Connection reset by peer')",1
+POST,POST /api/v1/bookings/,CatchResponseError('unexpected 500'),13
+GET,GET /home,"ConnectionResetError(104, 'Connection reset by peer')",1
+POST,POST /api/v1/bookings/[id]/cancel,HTTPError('500 Server Error: Internal Server Error for url: POST /api/v1/bookings/[id]/cancel'),7
+POST,POST /api/v1/auth/login,HTTPError('500 Server Error: Internal Server Error for url: POST /api/v1/auth/login'),29
+GET,GET /home,HTTPError('500 Server Error: Internal Server Error for url: GET /home'),21

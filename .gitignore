@@ -16,3 +16,4 @@ venv/
 dist/
 build/
 report.xml
+loadtest/results/*.log

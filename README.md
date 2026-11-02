@@ -139,6 +139,7 @@ coworking-booking/
 ├── config/              # шаблони .env.sandbox.example / .env.production.example
 ├── docs/                # architecture.md, lab2-auth.md, lab3-environments.md
 ├── tests/               # unit/ + integration/
+├── loadtest/            # Locust-сценарії, монітор ресурсів, аналіз, результати
 ├── .github/workflows/   # ci.yml
 ├── docker-compose.yml   # PostgreSQL на одне середовище (запускається двічі)
 ├── Makefile             # make setup-sandbox, make run-production, …
@@ -183,5 +184,19 @@ GitHub Actions (`.github/workflows/ci.yml`) запускається на кож
 закомічено, pytest на Python 3.12 і 3.13, міграції та pytest на
 PostgreSQL 16.
 
+## Навантажувальне тестування
+
+Сценарії Locust — у `loadtest/`. Профілі `smoke`, `baseline` (50 VUsers) і
+`stress` (50 → 300 VUsers):
+
+```bash
+pip install -r requirements-loadtest.txt
+make loadtest-seed        # 300 тестових користувачів у sandbox
+make loadtest-baseline    # сервер має бути запущений, див. Makefile
+make loadtest-stress
+make loadtest-report      # таблиці й графіки в loadtest/results/
+```
+
 Рішення лабораторних: [ЛР2 — ролі та доступ](docs/lab2-auth.md),
-[ЛР3 — середовища та CI](docs/lab3-environments.md).
+[ЛР3 — середовища та CI](docs/lab3-environments.md),
+[ЛР4 — навантажувальне тестування](docs/lab4-load-testing.md).
